@@ -1,10 +1,10 @@
 # Flash Alarm
 
-A small browser alarm that flashes the page, plays a repeating tone, and can show a desktop notification when the chosen local time arrives.
+A small browser alarm that enters full-screen and flashes the display, plays a repeating tone, and can show a desktop notification when the chosen local time arrives.
 
 ## Run it
 
-Open `public/index.html` in a browser, set an alarm, and leave the page open. If the chosen time has already passed today, the alarm is scheduled for tomorrow. The alarm is saved in that browser on that device.
+Open `public/index.html` in a browser, set an alarm, and leave the page open. Setting the alarm requests browser full-screen so the flash can fill the display. If the chosen time has already passed today, the alarm is scheduled for tomorrow. The alarm is saved in that browser on that device.
 
 ## Publish with GitHub and Cloudflare
 
@@ -19,6 +19,6 @@ This project has no build step or server-side alarm service.
 ## Alarm limitations
 
 - Keep the browser page open and the computer awake for the alarm to fire on time.
-- The flashing effect covers the browser page. A desktop notification is optional and depends on notification permission and browser support.
+- Full-screen mode lets the browser page cover the display. If the browser blocks full-screen, the flash covers only its window. A desktop notification is optional and depends on notification permission and browser support.
 - If the computer sleeps or the browser closes, the alarm cannot flash at its scheduled time. If the page is reopened after the scheduled time, it will ring then.
 - The browser may limit sound until the user has interacted with the page. The flashing alert remains the primary signal.

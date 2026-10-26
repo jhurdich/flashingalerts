@@ -41,7 +41,7 @@
   <main>
     <div class="eyebrow">A simple desktop alarm</div>
     <h1>Flash Alarm</h1>
-    <p class="intro">Choose a time. When it arrives, this page flashes until you dismiss the alarm.</p>
+    <p class="intro">Choose a time. This page enters full-screen, then flashes across the display when the alarm arrives.</p>
     <form id="alarmForm">
       <label for="alarmTime">Alarm time <span id="timezone"></span></label>
       <input id="alarmTime" type="time" required>
@@ -52,7 +52,7 @@
     </form>
     <div class="status" id="status" role="status" aria-live="polite"><strong>No alarm set.</strong><br>Set a time to get started.</div>
     <div class="badge"><span class="dot" id="dot"></span><span id="badgeText">Waiting for an alarm</span></div>
-    <p class="hint">Keep this page open and your computer awake. Flashing works in this browser tab; a desktop notification may also appear if you allow it. If the computer sleeps or the browser closes, the alarm can only fire after you wake or reopen it.</p>
+    <p class="hint">Keep this page open, in full-screen, and your computer awake. A desktop notification may also appear if you allow it. If the computer sleeps or the browser closes, the alarm can only fire after you wake or reopen it.</p>
   </main>
   <div id="alarmOverlay" role="alertdialog" aria-modal="true" aria-labelledby="alarmTitle">
     <section><h2 id="alarmTitle">TIME!</h2><p>Your alarm is ringing.</p><button id="dismissButton" type="button">Dismiss alarm</button></section>
@@ -135,6 +135,14 @@
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
         if (!timeInput.value) return;
+        const requestFullScreen = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen;
+        if (requestFullScreen) {
+          Promise.resolve(requestFullScreen.call(document.documentElement)).catch(() => {
+            if (alarm && !fired) status.innerHTML = `<strong>Alarm set for ${displayTime(alarm.at)}.</strong><br>Full-screen was blocked. Use your browser’s full-screen control for the alert to fill the display.`;
+          });
+        } else {
+          status.innerHTML = '<strong>Full-screen is unavailable in this browser.</strong><br>The alarm will flash inside the browser window.';
+        }
         const [hours, minutes] = timeInput.value.split(':').map(Number);
         const at = new Date();
         at.setHours(hours, minutes, 0, 0);
