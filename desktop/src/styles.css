@@ -24,6 +24,11 @@ button.secondary { color: #e8edf7; background: #ffffff17; }
 button[hidden] { display: none; }
 .status { min-height: 72px; margin-top: 22px; padding: 15px; border-radius: 13px; background: #ffffff0b; color: #dce3ef; line-height: 1.45; }
 .status strong { color: #fff; }
+.alarm-list { display:grid; gap:8px; margin-top:14px; }
+.alarm-item { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border:1px solid #ffffff20; border-radius:11px; background:#ffffff08; }
+.alarm-item strong, .alarm-item small { display:block; }
+.alarm-item small { margin-top:3px; color:#aab5c7; }
+.alarm-item button { padding:8px 11px; }
 .login-toggle { display: flex; gap: 10px; align-items: center; margin: 19px 0 0; cursor: pointer; }
 .login-toggle input { width: 17px; height: 17px; accent-color: #b6f36b; }
 .login-toggle span { font-size: .87rem; }

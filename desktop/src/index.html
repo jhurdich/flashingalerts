@@ -14,7 +14,7 @@
     <p class="intro">Set a time and time zone. When it arrives, every connected display will flash above your other apps.</p>
 
     <form id="alarmForm">
-      <label for="alarmTime">Alarm time</label>
+      <label for="alarmTime">Alarm time <span id="alarmCount">(0 of 5)</span></label>
       <input id="alarmTime" type="time" required>
 
       <label for="timeZone" class="zone-label">Time zone</label>
@@ -22,10 +22,10 @@
       <p id="zoneHint" class="field-hint">The alarm will ring at this time in the selected zone.</p>
 
       <div class="actions">
-        <button class="primary" type="submit">Set alarm</button>
-        <button id="cancelButton" class="secondary" type="button" hidden>Cancel</button>
+        <button class="primary" id="addButton" type="submit">Add alarm</button>
       </div>
     </form>
+    <div class="alarm-list" id="alarmList" aria-label="Scheduled alarms"></div>
 
     <section id="status" class="status" role="status" aria-live="polite">
       <strong>No alarm set.</strong><br>Set a time to get started.

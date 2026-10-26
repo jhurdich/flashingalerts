@@ -7,11 +7,10 @@ const gotSingleInstanceLock = app.requestSingleInstanceLock();
 if (!gotSingleInstanceLock) app.quit();
 
 let mainWindow = null;
-let activeAlarm = null;
+let alarms = [];
 let overlayWindows = [];
 let checkTimer = null;
 let beepTimer = null;
-let ringing = false;
 let quitRequested = false;
 const stateFile = () => path.join(app.getPath('userData'), 'alarm.json');
 
@@ -72,16 +71,16 @@ function persistAlarm() {
   const file = stateFile();
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const tempFile = `${file}.tmp`;
-  fs.writeFileSync(tempFile, JSON.stringify({ alarm: activeAlarm }), 'utf8');
+  fs.writeFileSync(tempFile, JSON.stringify({ alarms }), 'utf8');
   fs.renameSync(tempFile, file);
 }
 
 function loadAlarm() {
   try {
     const data = JSON.parse(fs.readFileSync(stateFile(), 'utf8'));
-    if (data.alarm && Number.isFinite(data.alarm.at) && typeof data.alarm.timeZone === 'string') activeAlarm = data.alarm;
+    alarms = Array.isArray(data.alarms) ? data.alarms.filter((alarm) => Number.isFinite(alarm.at) && typeof alarm.timeZone === 'string').slice(0, 5) : (data.alarm && Number.isFinite(data.alarm.at) ? [{ ...data.alarm, id: 'migrated-alarm', ringing: false }] : []);
   } catch (_) {
-    activeAlarm = null;
+    alarms = [];
   }
 }
 
@@ -103,16 +102,15 @@ function showMainWindow() {
 }
 
 function dismissAlarm() {
-  ringing = false;
   if (beepTimer) clearInterval(beepTimer);
   beepTimer = null;
   for (const window of overlayWindows) {
     if (!window.isDestroyed()) window.close();
   }
   overlayWindows = [];
-  activeAlarm = null;
+  alarms = alarms.filter((alarm) => !alarm.ringing);
   persistAlarm();
-  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('alarm:changed', null);
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('alarm:changed', alarms);
 }
 
 function createOverlay(display, alarm) {
@@ -151,15 +149,16 @@ function createOverlay(display, alarm) {
 }
 
 function ringAlarm() {
-  if (!activeAlarm || ringing || Date.now() < activeAlarm.at) return;
-  ringing = true;
+  const dueAlarms = alarms.filter((alarm) => !alarm.ringing && Date.now() >= alarm.at);
+  if (!dueAlarms.length) return;
+  for (const alarm of dueAlarms) alarm.ringing = true;
   persistAlarm();
-  for (const display of screen.getAllDisplays()) createOverlay(display, activeAlarm);
+  for (const display of screen.getAllDisplays()) createOverlay(display, dueAlarms[0]);
   if (Notification.isSupported()) {
-    new Notification({ title: 'Flash Alarm', body: `Your alarm is ringing (${displayTime(activeAlarm)}).` }).show();
+    new Notification({ title: 'Flash Alarm', body: `${dueAlarms.length} alarm${dueAlarms.length === 1 ? '' : 's'} ringing.` }).show();
   }
-  beepTimer = setInterval(() => shell.beep(), 1200);
-  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('alarm:changed', { ...activeAlarm, ringing: true });
+  if (!beepTimer) beepTimer = setInterval(() => shell.beep(), 1200);
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('alarm:changed', alarms);
 }
 
 function createMainWindow() {
@@ -190,23 +189,27 @@ function createMainWindow() {
 }
 
 ipcMain.handle('app:state', () => ({
-  alarm: activeAlarm ? { ...activeAlarm, ringing } : null,
+  alarms: alarms.map((alarm) => ({ ...alarm })),
   launchAtLogin: app.getLoginItemSettings().openAtLogin
 }));
 
 ipcMain.handle('alarm:set', (_event, request) => {
   if (!request || typeof request !== 'object') throw new Error('Choose a valid alarm time.');
-  const next = createNextAlarm(request);
-  dismissAlarm();
-  activeAlarm = next;
+  if (alarms.length >= 5) throw new Error('You can set up to five alarms.');
+  const next = { ...createNextAlarm(request), id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, ringing: false };
+  alarms.push(next);
   persistAlarm();
-  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('alarm:changed', activeAlarm);
-  return activeAlarm;
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('alarm:changed', alarms);
+  return alarms;
 });
 
-ipcMain.handle('alarm:cancel', () => {
-  dismissAlarm();
-  return null;
+ipcMain.handle('alarm:cancel', (_event, id) => {
+  const removed = alarms.find((alarm) => alarm.id === id);
+  alarms = alarms.filter((alarm) => alarm.id !== id);
+  if (removed?.ringing && !alarms.some((alarm) => alarm.ringing)) dismissAlarm();
+  persistAlarm();
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('alarm:changed', alarms);
+  return alarms;
 });
 
 ipcMain.handle('app:set-launch-at-login', (_event, enabled) => {

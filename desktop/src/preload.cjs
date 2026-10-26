@@ -3,7 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('flashAlarm', {
   getState: () => ipcRenderer.invoke('app:state'),
   setAlarm: (request) => ipcRenderer.invoke('alarm:set', request),
-  cancelAlarm: () => ipcRenderer.invoke('alarm:cancel'),
+  cancelAlarm: (id) => ipcRenderer.invoke('alarm:cancel', id),
   setLaunchAtLogin: (enabled) => ipcRenderer.invoke('app:set-launch-at-login', enabled),
   dismissAlarm: () => ipcRenderer.send('alarm:dismiss'),
   onAlarmChanged: (callback) => {

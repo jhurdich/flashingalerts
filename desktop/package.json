@@ -1,6 +1,6 @@
 {
   "name": "flash-alarm-desktop",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "A cross-platform desktop alarm that flashes every display",
   "main": "src/main.cjs",
