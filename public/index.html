@@ -38,6 +38,10 @@
     .download-link strong, .download-link small { display: block; }
     .download-link strong { font-size: .9rem; }
     .download-link small { margin-top: 3px; color: #aab5c7; font-size: .74rem; }
+    .install-steps { margin-top: 14px; padding: 13px 14px; border-radius: 11px; background: #ffffff0b; color: #b9c2d1; font-size: .82rem; line-height: 1.5; }
+    .install-steps p { margin: 0; }
+    .install-steps p + p { margin-top: 8px; }
+    .install-steps strong { color: #f5f7fb; }
     .download-note { margin: 10px 0 0; color: #9da8ba; font-size: .76rem; line-height: 1.45; }
     @media (max-width: 430px) { .download-grid { grid-template-columns: 1fr; } }
     #alarmOverlay { position: fixed; z-index: 5; inset: 0; display: none; place-items: center; padding: 24px; color: #111; background: #c7ff72; text-align: center; }
@@ -75,14 +79,15 @@
       <div class="download-grid">
         <a class="download-link" href="https://github.com/jhurdich/flashingalerts/actions/runs/40359629593/artifacts/12667777173" target="_blank" rel="noopener noreferrer" aria-label="Download the Mac desktop installer from GitHub">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.37 12.08c.02 2.17 1.9 2.9 1.92 2.91-.02.05-.3 1.04-.98 2.06-.6.9-1.22 1.79-2.2 1.8-.96.02-1.27-.58-2.37-.58-1.1 0-1.45.56-2.36.6-.95.04-1.67-.97-2.28-1.86-1.24-1.8-2.18-5.08-.91-7.3.63-1.11 1.76-1.82 2.98-1.84.93-.02 1.8.63 2.37.63.57 0 1.63-.78 2.75-.67.47.02 1.78.19 2.62 1.43-.07.04-1.56.91-1.54 2.82ZM14.57 6.63c.5-.6.84-1.44.75-2.28-.72.03-1.6.48-2.12 1.08-.47.54-.88 1.4-.77 2.22.81.06 1.64-.41 2.14-1.02Z"/></svg>
-          <span><strong>Download for Mac</strong><small>Universal installer · .dmg</small></span>
+          <span><strong>Download for Mac</strong><small>ZIP download · contains a .dmg</small></span>
         </a>
         <a class="download-link" href="https://github.com/jhurdich/flashingalerts/actions/runs/40359629593/artifacts/12668530099" target="_blank" rel="noopener noreferrer" aria-label="Download the Windows desktop installer from GitHub">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 4.2 10.7 3v8.4H2V4.2Zm10.1-1.4L22 1.5v9.9h-9.9V2.8ZM2 12.7h8.7v8.4L2 19.9v-7.2Zm10.1 0H22v9.8l-9.9-1.4v-8.4Z"/></svg>
-          <span><strong>Download for Windows</strong><small>64-bit installer · .exe</small></span>
+          <span><strong>Download for Windows</strong><small>ZIP download · contains a 64-bit .exe</small></span>
         </a>
       </div>
-      <p class="download-note">GitHub may ask you to sign in before downloading. Installers are unsigned, so your computer may show a security prompt.</p>
+      <div class="install-steps"><p><strong>Mac:</strong> Open the downloaded ZIP in Downloads, open the .dmg inside, then drag Flash Alarm into Applications. On first launch, Control-click Flash Alarm and choose Open if macOS asks to confirm.</p><p><strong>Windows:</strong> Open the downloaded ZIP, extract it, then run the .exe installer.</p></div>
+      <p class="download-note">These links download ZIP files; they are not web pages. GitHub may ask you to sign in. The apps are unsigned, so your computer may show a security prompt.</p>
     </section>
   </main>
   <div id="alarmOverlay" role="alertdialog" aria-modal="true" aria-labelledby="alarmTitle">
