@@ -20,7 +20,7 @@ This project has no build step or server-side alarm service.
 
 The `desktop/` folder contains an Electron app for macOS and Windows. It can put a flashing, always-on-top overlay on every connected display, even when another app is in front. Minimize the app to keep its alarm scheduler running; the sign-in option can launch it automatically after you log in. Quitting the app stops its scheduler, and an alarm that passes while the app is quit will ring when you next open it.
 
-The GitHub Actions workflow builds a universal macOS disk image and a 64-bit Windows installer when desktop files change. Download them from the workflow run's **Artifacts** section; each artifact is available for 30 days. These first builds are unsigned because code-signing certificates were not provided, so macOS Gatekeeper and Windows SmartScreen may show an installation warning.
+The GitHub Actions workflow builds a universal macOS disk image and a 64-bit Windows installer when desktop files change, then publishes both as direct downloads in a GitHub Release. The website links to those installer files. The workflow run also keeps temporary backup artifacts for 30 days. These builds are unsigned because code-signing certificates were not provided, so macOS Gatekeeper and Windows SmartScreen may show an installation warning.
 
 ## Alarm limitations
 
