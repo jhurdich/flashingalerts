@@ -41,10 +41,13 @@
   <main>
     <div class="eyebrow">A simple desktop alarm</div>
     <h1>Flash Alarm</h1>
-    <p class="intro">Choose a time. This page enters full-screen, then flashes across the display when the alarm arrives.</p>
+    <p class="intro">Choose a time and time zone. This page enters full-screen, then flashes across the display when the alarm arrives.</p>
     <form id="alarmForm">
-      <label for="alarmTime">Alarm time <span id="timezone"></span></label>
+      <label for="alarmTime">Alarm time</label>
       <input id="alarmTime" type="time" required>
+      <label for="timeZone" style="margin-top:18px">Time zone</label>
+      <select id="timeZone" aria-describedby="zoneHint"></select>
+      <p class="hint" id="zoneHint" style="margin-top:8px">The alarm will ring at this time in the selected zone.</p>
       <div class="row">
         <button id="setButton" type="submit">Set alarm</button>
         <button id="cancelButton" class="secondary" type="button" hidden>Cancel</button>
@@ -62,20 +65,48 @@
       const STORAGE_KEY = 'flash-alarm-v1';
       const form = document.querySelector('#alarmForm');
       const timeInput = document.querySelector('#alarmTime');
+      const timeZoneSelect = document.querySelector('#timeZone');
       const status = document.querySelector('#status');
       const cancelButton = document.querySelector('#cancelButton');
       const overlay = document.querySelector('#alarmOverlay');
       const dot = document.querySelector('#dot');
       const badgeText = document.querySelector('#badgeText');
-      const timezone = document.querySelector('#timezone');
+      const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
       let alarm = null;
       let fired = false;
       let audioContext = null;
       let toneTimer = null;
-      timezone.textContent = `(${Intl.DateTimeFormat().resolvedOptions().timeZone})`;
+      const availableZones = typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : ['UTC', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles', 'Europe/London', 'Europe/Paris', 'Asia/Tokyo', 'Australia/Sydney'];
+      for (const zone of [...new Set(['UTC', localTimeZone, ...availableZones])].sort((a, b) => a === localTimeZone ? -1 : b === localTimeZone ? 1 : a.localeCompare(b))) {
+        const option = document.createElement('option');
+        option.value = zone;
+        option.textContent = zone === localTimeZone ? `${zone} (this device)` : zone;
+        timeZoneSelect.append(option);
+      }
+      timeZoneSelect.value = localTimeZone;
 
-      function displayTime(timestamp) {
-        return new Intl.DateTimeFormat(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }).format(new Date(timestamp));
+      function displayTime(timestamp, timeZone = localTimeZone) {
+        return new Intl.DateTimeFormat(undefined, { timeZone, weekday: 'short', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }).format(new Date(timestamp));
+      }
+      function datePartsInZone(timestamp, timeZone) {
+        const parts = new Intl.DateTimeFormat('en-US', { timeZone, year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date(timestamp));
+        return Object.fromEntries(parts.filter(part => part.type !== 'literal').map(part => [part.type, Number(part.value)]));
+      }
+      function zonedTimeToTimestamp(year, month, day, hour, minute, timeZone) {
+        const desired = { year, month, day, hour, minute, second: 0 };
+        const desiredAsUtc = Date.UTC(year, month - 1, day, hour, minute, 0);
+        let candidate = desiredAsUtc;
+        const formatter = new Intl.DateTimeFormat('en-US', { timeZone, year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', hourCycle: 'h23' });
+        for (let i = 0; i < 4; i++) {
+          const parts = Object.fromEntries(formatter.formatToParts(new Date(candidate)).filter(part => part.type !== 'literal').map(part => [part.type, Number(part.value)]));
+          const actualAsUtc = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
+          candidate += desiredAsUtc - actualAsUtc;
+        }
+        const check = Object.fromEntries(formatter.formatToParts(new Date(candidate)).filter(part => part.type !== 'literal').map(part => [part.type, Number(part.value)]));
+        if (check.year !== desired.year || check.month !== desired.month || check.day !== desired.day || check.hour !== desired.hour || check.minute !== desired.minute) {
+          throw new Error('That local time does not exist in the selected time zone because of a daylight saving time change. Choose another time.');
+        }
+        return candidate;
       }
       function save() {
         if (alarm) localStorage.setItem(STORAGE_KEY, JSON.stringify(alarm));
@@ -86,7 +117,7 @@
         cancelButton.hidden = !active;
         dot.classList.toggle('active', active);
         if (active) {
-          status.innerHTML = `<strong>Alarm set for ${displayTime(alarm.at)}.</strong><br>Leave this page open and keep the computer awake.`;
+          status.innerHTML = `<strong>Alarm set for ${displayTime(alarm.at, alarm.timeZone)}.</strong><br>Leave this page open and keep the computer awake.`;
           badgeText.textContent = 'Alarm is armed';
         } else if (!fired) {
           status.innerHTML = '<strong>No alarm set.</strong><br>Set a time to get started.';
@@ -135,23 +166,36 @@
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
         if (!timeInput.value) return;
+        const [hours, minutes] = timeInput.value.split(':').map(Number);
+        const timeZone = timeZoneSelect.value;
+        let date, at;
+        try {
+          date = datePartsInZone(Date.now(), timeZone);
+          at = zonedTimeToTimestamp(date.year, date.month, date.day, hours, minutes, timeZone);
+          if (at <= Date.now()) {
+            const tomorrow = new Date(Date.UTC(date.year, date.month - 1, date.day + 1));
+            date = { year: tomorrow.getUTCFullYear(), month: tomorrow.getUTCMonth() + 1, day: tomorrow.getUTCDate() };
+            at = zonedTimeToTimestamp(date.year, date.month, date.day, hours, minutes, timeZone);
+          }
+        } catch (error) {
+          status.innerHTML = `<strong>Could not set that alarm.</strong><br>${error.message}`;
+          return;
+        }
         const requestFullScreen = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen;
+        const fullScreenSupported = Boolean(requestFullScreen);
         if (requestFullScreen) {
           Promise.resolve(requestFullScreen.call(document.documentElement)).catch(() => {
-            if (alarm && !fired) status.innerHTML = `<strong>Alarm set for ${displayTime(alarm.at)}.</strong><br>Full-screen was blocked. Use your browser’s full-screen control for the alert to fill the display.`;
+            if (alarm && !fired) status.innerHTML = `<strong>Alarm set for ${displayTime(alarm.at, alarm.timeZone)}.</strong><br>Full-screen was blocked. Use your browser’s full-screen control for the alert to fill the display.`;
           });
         } else {
           status.innerHTML = '<strong>Full-screen is unavailable in this browser.</strong><br>The alarm will flash inside the browser window.';
         }
-        const [hours, minutes] = timeInput.value.split(':').map(Number);
-        const at = new Date();
-        at.setHours(hours, minutes, 0, 0);
-        if (at.getTime() <= Date.now()) at.setDate(at.getDate() + 1);
-        alarm = { at: at.getTime(), fired: false };
+        alarm = { at, timeZone, fired: false };
         fired = false;
         overlay.classList.remove('show');
         save();
         render();
+        if (!fullScreenSupported) status.innerHTML = `<strong>Alarm set for ${displayTime(alarm.at, alarm.timeZone)}.</strong><br>Full-screen is unavailable; the alert will flash inside the browser window.`;
         await askForNotification();
       });
       cancelButton.addEventListener('click', () => {
@@ -174,6 +218,8 @@
         const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
         if (saved && Number.isFinite(saved.at)) {
           alarm = saved;
+          alarm.timeZone = alarm.timeZone || localTimeZone;
+          timeZoneSelect.value = alarm.timeZone;
           if (saved.fired) {
             alarm = null;
             localStorage.removeItem(STORAGE_KEY);

@@ -1,10 +1,10 @@
 # Flash Alarm
 
-A small browser alarm that enters full-screen and flashes the display, plays a repeating tone, and can show a desktop notification when the chosen local time arrives.
+A small browser alarm that enters full-screen and flashes the display, plays a repeating tone, and can show a desktop notification when the chosen time arrives in the selected time zone.
 
 ## Run it
 
-Open `public/index.html` in a browser, set an alarm, and leave the page open. Setting the alarm requests browser full-screen so the flash can fill the display. If the chosen time has already passed today, the alarm is scheduled for tomorrow. The alarm is saved in that browser on that device.
+Open `public/index.html` in a browser, choose an alarm time and time zone, set the alarm, and leave the page open. Setting the alarm requests browser full-screen so the flash can fill the display. If the chosen time has already passed today in that zone, the alarm is scheduled for tomorrow there. The alarm is saved in that browser on that device.
 
 ## Publish with GitHub and Cloudflare
 
