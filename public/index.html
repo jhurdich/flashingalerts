@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10131a">
+  <title>Flash Alarm</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; color: #f5f7fb; background: radial-gradient(ellipse at 50% 0%, #28334a 0, #171c28 42%, #10131a 100%); }
+    main { width: min(100%, 560px); padding: clamp(26px, 6vw, 48px); border: 1px solid #ffffff20; border-radius: 24px; background: #171c26e8; box-shadow: 0 24px 90px #0008; }
+    .eyebrow { color: #a6b7d5; font-size: .76rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
+    h1 { margin: 10px 0 8px; font-size: clamp(2.2rem, 8vw, 3.4rem); letter-spacing: -.055em; line-height: 1; }
+    .intro { color: #b9c2d1; line-height: 1.55; margin: 0 0 28px; }
+    label { display: block; margin-bottom: 9px; font-size: .9rem; font-weight: 650; }
+    input[type="time"] { width: 100%; padding: 15px 16px; border: 1px solid #ffffff2a; border-radius: 12px; background: #0e121a; color: #fff; font: inherit; font-size: 1.35rem; }
+    .row { display: flex; gap: 10px; margin-top: 14px; }
+    button { cursor: pointer; border: 0; border-radius: 11px; padding: 13px 18px; color: #10131a; background: #b6f36b; font: inherit; font-weight: 750; transition: transform .15s, filter .15s; }
+    button:hover { filter: brightness(1.07); transform: translateY(-1px); }
+    button:focus-visible, input:focus-visible { outline: 3px solid #79c5ff; outline-offset: 3px; }
+    button.secondary { color: #e8edf7; background: #ffffff17; }
+    button[hidden] { display: none; }
+    .status { min-height: 76px; margin-top: 24px; padding: 16px; border-radius: 14px; background: #ffffff0b; color: #dce3ef; line-height: 1.45; }
+    .status strong { color: #fff; }
+    .hint { margin: 18px 0 0; color: #9da8ba; font-size: .84rem; line-height: 1.55; }
+    .badge { display: inline-flex; gap: 7px; align-items: center; margin-top: 22px; color: #aab5c7; font-size: .8rem; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #7e899a; }
+    .dot.active { background: #b6f36b; box-shadow: 0 0 12px #b6f36b99; }
+    #alarmOverlay { position: fixed; z-index: 5; inset: 0; display: none; place-items: center; padding: 24px; color: #111; background: #c7ff72; text-align: center; }
+    #alarmOverlay.show { display: grid; animation: pulse .8s steps(2, end) infinite; }
+    #alarmOverlay section { max-width: 640px; }
+    #alarmOverlay h2 { margin: 0 0 12px; font-size: clamp(3.4rem, 14vw, 8rem); letter-spacing: -.07em; line-height: .9; }
+    #alarmOverlay p { font-size: 1.25rem; }
+    #alarmOverlay button { color: white; background: #10131a; }
+    @keyframes pulse { 50% { background: #fff; } }
+    @media (prefers-reduced-motion: reduce) { #alarmOverlay.show { animation-duration: 1.8s; } }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="eyebrow">A simple desktop alarm</div>
+    <h1>Flash Alarm</h1>
+    <p class="intro">Choose a time. When it arrives, this page flashes until you dismiss the alarm.</p>
+    <form id="alarmForm">
+      <label for="alarmTime">Alarm time <span id="timezone"></span></label>
+      <input id="alarmTime" type="time" required>
+      <div class="row">
+        <button id="setButton" type="submit">Set alarm</button>
+        <button id="cancelButton" class="secondary" type="button" hidden>Cancel</button>
+      </div>
+    </form>
+    <div class="status" id="status" role="status" aria-live="polite"><strong>No alarm set.</strong><br>Set a time to get started.</div>
+    <div class="badge"><span class="dot" id="dot"></span><span id="badgeText">Waiting for an alarm</span></div>
+    <p class="hint">Keep this page open and your computer awake. Flashing works in this browser tab; a desktop notification may also appear if you allow it. If the computer sleeps or the browser closes, the alarm can only fire after you wake or reopen it.</p>
+  </main>
+  <div id="alarmOverlay" role="alertdialog" aria-modal="true" aria-labelledby="alarmTitle">
+    <section><h2 id="alarmTitle">TIME!</h2><p>Your alarm is ringing.</p><button id="dismissButton" type="button">Dismiss alarm</button></section>
+  </div>
+  <script>
+    (() => {
+      const STORAGE_KEY = 'flash-alarm-v1';
+      const form = document.querySelector('#alarmForm');
+      const timeInput = document.querySelector('#alarmTime');
+      const status = document.querySelector('#status');
+      const cancelButton = document.querySelector('#cancelButton');
+      const overlay = document.querySelector('#alarmOverlay');
+      const dot = document.querySelector('#dot');
+      const badgeText = document.querySelector('#badgeText');
+      const timezone = document.querySelector('#timezone');
+      let alarm = null;
+      let fired = false;
+      let audioContext = null;
+      let toneTimer = null;
+      timezone.textContent = `(${Intl.DateTimeFormat().resolvedOptions().timeZone})`;
+
+      function displayTime(timestamp) {
+        return new Intl.DateTimeFormat(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }).format(new Date(timestamp));
+      }
+      function save() {
+        if (alarm) localStorage.setItem(STORAGE_KEY, JSON.stringify(alarm));
+        else localStorage.removeItem(STORAGE_KEY);
+      }
+      function render() {
+        const active = Boolean(alarm) && !fired;
+        cancelButton.hidden = !active;
+        dot.classList.toggle('active', active);
+        if (active) {
+          status.innerHTML = `<strong>Alarm set for ${displayTime(alarm.at)}.</strong><br>Leave this page open and keep the computer awake.`;
+          badgeText.textContent = 'Alarm is armed';
+        } else if (!fired) {
+          status.innerHTML = '<strong>No alarm set.</strong><br>Set a time to get started.';
+          badgeText.textContent = 'Waiting for an alarm';
+        }
+      }
+      async function askForNotification() {
+        if (!('Notification' in window) || Notification.permission !== 'default') return;
+        try { await Notification.requestPermission(); } catch (_) { /* Notifications are optional. */ }
+      }
+      function startTone() {
+        try {
+          audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
+          if (audioContext.state === 'suspended') audioContext.resume();
+          toneTimer = window.setInterval(() => {
+            if (!audioContext || audioContext.state !== 'running') return;
+            const oscillator = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            oscillator.frequency.value = 740;
+            gain.gain.setValueAtTime(0.001, audioContext.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.12, audioContext.currentTime + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.28);
+            oscillator.connect(gain).connect(audioContext.destination);
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.3);
+          }, 520);
+        } catch (_) { /* Visual alert still works if audio is unavailable. */ }
+      }
+      function ring() {
+        fired = true;
+        if (alarm) alarm.fired = true;
+        save();
+        render();
+        status.innerHTML = '<strong>Alarm is ringing.</strong><br>Dismiss it to stop the flash and sound.';
+        badgeText.textContent = 'Alarm is ringing';
+        overlay.classList.add('show');
+        startTone();
+        if ('Notification' in window && Notification.permission === 'granted') {
+          try { new Notification('Flash Alarm', { body: 'Your alarm is ringing.' }); } catch (_) { /* Tab flash remains available. */ }
+        }
+        document.querySelector('#dismissButton').focus();
+      }
+      function checkAlarm() {
+        if (alarm && !alarm.fired && Date.now() >= alarm.at) ring();
+      }
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!timeInput.value) return;
+        const [hours, minutes] = timeInput.value.split(':').map(Number);
+        const at = new Date();
+        at.setHours(hours, minutes, 0, 0);
+        if (at.getTime() <= Date.now()) at.setDate(at.getDate() + 1);
+        alarm = { at: at.getTime(), fired: false };
+        fired = false;
+        overlay.classList.remove('show');
+        save();
+        render();
+        await askForNotification();
+      });
+      cancelButton.addEventListener('click', () => {
+        alarm = null;
+        fired = false;
+        save();
+        render();
+      });
+      document.querySelector('#dismissButton').addEventListener('click', () => {
+        window.clearInterval(toneTimer);
+        toneTimer = null;
+        overlay.classList.remove('show');
+        alarm = null;
+        fired = false;
+        save();
+        render();
+        timeInput.focus();
+      });
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+        if (saved && Number.isFinite(saved.at)) {
+          alarm = saved;
+          if (saved.fired) {
+            alarm = null;
+            localStorage.removeItem(STORAGE_KEY);
+          } else if (saved.at <= Date.now()) {
+            ring();
+          }
+        }
+      } catch (_) { localStorage.removeItem(STORAGE_KEY); }
+      render();
+      window.setInterval(checkAlarm, 500);
+    })();
+  </script>
+</body>
+</html>
