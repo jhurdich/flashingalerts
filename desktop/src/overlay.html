@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self';">
+  <title>Flash Alarm</title>
+  <link rel="stylesheet" href="overlay.css">
+</head>
+<body>
+  <main class="alarm" role="alertdialog" aria-modal="true" aria-labelledby="alarmTitle">
+    <div class="content">
+      <div class="eyebrow">Flash Alarm</div>
+      <h1 id="alarmTitle">TIME!</h1>
+      <p id="alarmTime">Your alarm is ringing.</p>
+      <button id="dismissButton" type="button">Dismiss alarm</button>
+      <p class="escape">Press Esc to dismiss</p>
+    </div>
+  </main>
+  <script src="overlay.js"></script>
+</body>
+</html>

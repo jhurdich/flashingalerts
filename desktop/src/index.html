@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self';">
+  <title>Flash Alarm</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="card">
+    <div class="eyebrow">Desktop alarm</div>
+    <h1>Flash Alarm</h1>
+    <p class="intro">Set a time and time zone. When it arrives, every connected display will flash above your other apps.</p>
+
+    <form id="alarmForm">
+      <label for="alarmTime">Alarm time</label>
+      <input id="alarmTime" type="time" required>
+
+      <label for="timeZone" class="zone-label">Time zone</label>
+      <select id="timeZone" aria-describedby="zoneHint"></select>
+      <p id="zoneHint" class="field-hint">The alarm will ring at this time in the selected zone.</p>
+
+      <div class="actions">
+        <button class="primary" type="submit">Set alarm</button>
+        <button id="cancelButton" class="secondary" type="button" hidden>Cancel</button>
+      </div>
+    </form>
+
+    <section id="status" class="status" role="status" aria-live="polite">
+      <strong>No alarm set.</strong><br>Set a time to get started.
+    </section>
+
+    <label class="login-toggle"><input id="launchAtLogin" type="checkbox"><span>Start Flash Alarm when I sign in</span></label>
+    <p id="backgroundHint" class="hint">Closing this window minimizes the app so the alarm can keep running. Use the app menu and choose Quit to stop it completely.</p>
+    <div class="badge"><span class="dot" id="dot"></span><span id="badgeText">Waiting for an alarm</span></div>
+  </main>
+  <script src="renderer.js"></script>
+</body>
+</html>

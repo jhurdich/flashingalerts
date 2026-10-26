@@ -1,0 +1,45 @@
+{
+  "name": "flash-alarm-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A cross-platform desktop alarm that flashes every display",
+  "main": "src/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "dist:mac": "electron-builder --mac dmg --universal",
+    "dist:win": "electron-builder --win nsis --x64"
+  },
+  "devDependencies": {
+    "electron": "45.0.0",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "com.jhurdich.flashalarm",
+    "productName": "Flash Alarm",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": ["dmg"]
+    },
+    "dmg": {
+      "artifactName": "${productName}-${version}-mac-${arch}.${ext}"
+    },
+    "win": {
+      "target": ["nsis"]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "artifactName": "${productName}-${version}-windows-${arch}-Setup.${ext}"
+    }
+  }
+}
