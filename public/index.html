@@ -27,6 +27,19 @@
     .badge { display: inline-flex; gap: 7px; align-items: center; margin-top: 22px; color: #aab5c7; font-size: .8rem; }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: #7e899a; }
     .dot.active { background: #b6f36b; box-shadow: 0 0 12px #b6f36b99; }
+    .downloads { margin-top: 26px; padding-top: 22px; border-top: 1px solid #ffffff20; }
+    .downloads h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.02em; }
+    .downloads .download-intro { margin: 7px 0 14px; color: #b9c2d1; font-size: .9rem; line-height: 1.5; }
+    .download-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .download-link { display: flex; gap: 11px; align-items: center; min-height: 66px; padding: 12px; border: 1px solid #ffffff24; border-radius: 12px; color: #f5f7fb; background: #ffffff0b; text-decoration: none; transition: background .15s, border-color .15s, transform .15s; }
+    .download-link:hover { background: #ffffff14; border-color: #b6f36b80; transform: translateY(-1px); }
+    .download-link:focus-visible { outline: 3px solid #79c5ff; outline-offset: 3px; }
+    .download-link svg { flex: 0 0 28px; width: 28px; height: 28px; fill: currentColor; }
+    .download-link strong, .download-link small { display: block; }
+    .download-link strong { font-size: .9rem; }
+    .download-link small { margin-top: 3px; color: #aab5c7; font-size: .74rem; }
+    .download-note { margin: 10px 0 0; color: #9da8ba; font-size: .76rem; line-height: 1.45; }
+    @media (max-width: 430px) { .download-grid { grid-template-columns: 1fr; } }
     #alarmOverlay { position: fixed; z-index: 5; inset: 0; display: none; place-items: center; padding: 24px; color: #111; background: #c7ff72; text-align: center; }
     #alarmOverlay.show { display: grid; animation: pulse .8s steps(2, end) infinite; }
     #alarmOverlay section { max-width: 640px; }
@@ -56,6 +69,21 @@
     <div class="status" id="status" role="status" aria-live="polite"><strong>No alarm set.</strong><br>Set a time to get started.</div>
     <div class="badge"><span class="dot" id="dot"></span><span id="badgeText">Waiting for an alarm</span></div>
     <p class="hint">Keep this page open, in full-screen, and your computer awake. A desktop notification may also appear if you allow it. If the computer sleeps or the browser closes, the alarm can only fire after you wake or reopen it.</p>
+    <section class="downloads" aria-labelledby="downloadsTitle">
+      <h2 id="downloadsTitle">Flash across your desktop</h2>
+      <p class="download-intro">For an alarm that flashes over other apps, install the desktop app for your computer.</p>
+      <div class="download-grid">
+        <a class="download-link" href="https://github.com/jhurdich/flashingalerts/actions/runs/40359629593/artifacts/12667777173" target="_blank" rel="noopener noreferrer" aria-label="Download the Mac desktop installer from GitHub">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.37 12.08c.02 2.17 1.9 2.9 1.92 2.91-.02.05-.3 1.04-.98 2.06-.6.9-1.22 1.79-2.2 1.8-.96.02-1.27-.58-2.37-.58-1.1 0-1.45.56-2.36.6-.95.04-1.67-.97-2.28-1.86-1.24-1.8-2.18-5.08-.91-7.3.63-1.11 1.76-1.82 2.98-1.84.93-.02 1.8.63 2.37.63.57 0 1.63-.78 2.75-.67.47.02 1.78.19 2.62 1.43-.07.04-1.56.91-1.54 2.82ZM14.57 6.63c.5-.6.84-1.44.75-2.28-.72.03-1.6.48-2.12 1.08-.47.54-.88 1.4-.77 2.22.81.06 1.64-.41 2.14-1.02Z"/></svg>
+          <span><strong>Download for Mac</strong><small>Universal installer · .dmg</small></span>
+        </a>
+        <a class="download-link" href="https://github.com/jhurdich/flashingalerts/actions/runs/40359629593/artifacts/12668530099" target="_blank" rel="noopener noreferrer" aria-label="Download the Windows desktop installer from GitHub">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 4.2 10.7 3v8.4H2V4.2Zm10.1-1.4L22 1.5v9.9h-9.9V2.8ZM2 12.7h8.7v8.4L2 19.9v-7.2Zm10.1 0H22v9.8l-9.9-1.4v-8.4Z"/></svg>
+          <span><strong>Download for Windows</strong><small>64-bit installer · .exe</small></span>
+        </a>
+      </div>
+      <p class="download-note">GitHub may ask you to sign in before downloading. Installers are unsigned, so your computer may show a security prompt.</p>
+    </section>
   </main>
   <div id="alarmOverlay" role="alertdialog" aria-modal="true" aria-labelledby="alarmTitle">
     <section><h2 id="alarmTitle">TIME!</h2><p>Your alarm is ringing.</p><button id="dismissButton" type="button">Dismiss alarm</button></section>
