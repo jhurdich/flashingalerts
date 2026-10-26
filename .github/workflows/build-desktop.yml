@@ -40,3 +40,42 @@ jobs:
           path: desktop/dist/*
           if-no-files-found: error
           retention-days: 30
+
+  publish-release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: flash-alarm-mac
+          path: installers/mac
+      - uses: actions/download-artifact@v4
+        with:
+          name: flash-alarm-windows
+          path: installers/windows
+      - name: Publish direct installer downloads
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(node -p "require('./desktop/package.json').version")
+          tag="v$version"
+          mac_dmg=$(find installers/mac -type f -name '*.dmg' -print -quit)
+          windows_exe=$(find installers/windows -type f -name '*.exe' -print -quit)
+          if [ -z "$mac_dmg" ] || [ -z "$windows_exe" ]; then
+            echo "Could not find both desktop installers." >&2
+            exit 1
+          fi
+          cp "$mac_dmg" installers/Flash-Alarm-mac.dmg
+          cp "$windows_exe" installers/Flash-Alarm-Windows-Setup.exe
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release '$tag' already exists. Bump desktop/package.json version to publish new installers."
+            exit 0
+          fi
+          gh release create "$tag" \
+            installers/Flash-Alarm-mac.dmg \
+            installers/Flash-Alarm-Windows-Setup.exe \
+            --title "Flash Alarm $version" \
+            --notes "Direct installers for macOS and Windows. Both downloads are unsigned."
